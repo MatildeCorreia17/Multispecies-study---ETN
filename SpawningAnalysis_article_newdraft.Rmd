@@ -1,0 +1,421 @@
+---
+title: "SpawningAnalysis"
+author: "anonymous"
+date: "2025-12-09"
+output: html_document
+---
+
+```{r}
+#Required packages
+if(!require(correlation)){install.packages("correlation"); library(correlation)}
+if(!require(car)){install.packages("car"); library(car)}
+if(!require(mgcv)){install.packages("mgcv"); library(mgcv)}
+if(!require(rpart)){install.packages("rpart"); library(rpart)}
+if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
+if(!require(gridExtra)){install.packages("gridExtra"); library(gridExtra)}
+if(!require(lme4)){install.packages("lme4"); library(lme4)}
+if(!require(Matrix)){install.packages("Matrix"); library(Matrix)}
+if(!require(lmtest)){install.packages("lmtest"); library(lmtest)}
+if(!require(gamm4)){install.packages("gamm4"); library(gamm4)}
+if(!require(sjPlot)){install.packages("sjPlot"); library(sjPlot)}
+if(!require(sjmisc)){install.packages("sjmisc"); library(sjmisc)}
+if(!require(sjlabelled)){install.packages("sjlabelled"); library(sjlabelled)}
+if(!require(performance)){install.packages("performance"); library(performance)}
+if(!require(glmmTMB)){install.packages("glmmTMB"); library(glmmTMB)}
+if(!require(DHARMa)){install.packages("DHARMa"); library(DHARMa)}
+```
+
+
+### Import Dataset
+
+```{r}
+#Import data
+week_kuds <- read.csv("dataset_new1.csv", sep= ";")
+
+#create week variable without the year
+names(week_kuds)[names(week_kuds) == "Week"] <- "WeekYear"
+week_kuds$Week <- substr(week_kuds$WeekYear, 1, 2)
+#create year variable without the week
+week_kuds$Year <- substr(week_kuds$WeekYear, 4, 7)
+
+week_kuds$Spawn <- with(week_kuds, ifelse((SpawnSeason == "SS" & Week %in% c("11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40")) |
+                          (SpawnSeason == "A" & Week %in% c("41", "42", "43", "44", "45", "46", "47", "48", "49", "50")) |
+                          (SpawnSeason == "W" & Week %in% c("51", "52", "53", "54", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10")),
+                          "yes", "no"))
+week_kuds$SpawnSeason <- as.factor(week_kuds$SpawnSeason)
+
+week_kuds$File <- as.factor(week_kuds$File)
+week_kuds$Species <- as.factor(week_kuds$Species)
+week_kuds$Transmitter <- as.factor(week_kuds$Transmitter)
+week_kuds$KUD50 <- as.numeric(week_kuds$KUD50)
+week_kuds$KUD95 <- as.numeric(week_kuds$KUD95)
+week_kuds$Habitat <- as.factor(week_kuds$Habitat)
+week_kuds$Migration <- as.factor(week_kuds$Migration)
+week_kuds$ComImport <- as.factor(week_kuds$ComImport)
+week_kuds$Length_cm <- as.numeric(week_kuds$Length_cm)
+week_kuds$LengthStd <- as.numeric(week_kuds$LengthStd)
+week_kuds$BodyMass <- as.numeric(week_kuds$BodyMass)
+week_kuds$BodyMassStd <- as.numeric(week_kuds$BodyMassStd)
+week_kuds$Longevity <- as.numeric(week_kuds$Longevity)
+week_kuds$Vulnerability <- as.numeric(week_kuds$Vulnerability)
+week_kuds$Troph <- as.numeric(week_kuds$Troph)
+week_kuds$ReceiverDensity <- as.numeric(week_kuds$ReceiverDensity)
+week_kuds$MonitArea_km2 <- as.numeric(week_kuds$MonitArea_km2)
+week_kuds$MCP_km2 <- as.numeric(week_kuds$MCP_km2)
+week_kuds$NReceivers <- as.numeric(week_kuds$NReceivers)
+week_kuds$MaxDistReceivers <- as.numeric(week_kuds$MaxDistReceivers)
+week_kuds$MaxLength <- as.numeric(week_kuds$MaxLength)
+week_kuds$MaxBodyMass <- as.numeric(week_kuds$MaxBodyMass)
+week_kuds$a <- as.numeric(week_kuds$a)
+week_kuds$b <- as.numeric(week_kuds$b)
+week_kuds$Week <- as.factor(week_kuds$Week)
+week_kuds$Year <- as.factor(week_kuds$Year)
+week_kuds$Spawn <- as.factor(week_kuds$Spawn)
+```
+
+
+```{r}
+#Glmm KUD95 for each Species
+
+data_dentex_dentex <- subset(week_kuds, Species == "Dden")
+
+glmm_dentex_dentex <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 +  (1|Transmitter), data=data_dentex_dentex, family = Gamma(link="log"))
+summary(glmm_dentex_dentex)
+
+boxplot(data_dentex_dentex$KUD95 ~ data_dentex_dentex$Spawn)
+#################################################################################
+data_dicentrarchus_labrax <- subset(week_kuds, Species == "Dlab")
+
+glmm_dicentrarchus_labrax <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_dicentrarchus_labrax, family = Gamma(link="log"))
+summary(glmm_dicentrarchus_labrax)
+
+boxplot(data_dicentrarchus_labrax$KUD95 ~ data_dicentrarchus_labrax$Spawn)
+#################################################################################
+data_diplodus_cervinus <- subset(week_kuds, Species == "Dcer")
+
+glmm_diplodus_cervinus <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_diplodus_cervinus, family = Gamma(link="log"))
+summary(glmm_diplodus_cervinus)
+
+boxplot(data_diplodus_cervinus$KUD95 ~ data_diplodus_cervinus$Spawn)
+#################################################################################
+data_diplodus_sargus <- subset(week_kuds, Species == "Dsar")
+
+glmm_diplodus_sargus <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_diplodus_sargus, family = Gamma(link="log"))
+summary(glmm_diplodus_sargus)
+
+boxplot(data_diplodus_sargus$KUD95 ~ data_diplodus_sargus$Spawn)
+#################################################################################
+data_diplodus_vulgaris <- subset(week_kuds, Species == "Dvul")
+
+glmm_diplodus_vulgaris <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_diplodus_vulgaris, family = Gamma(link="log"))
+summary(glmm_diplodus_vulgaris)
+
+boxplot(data_diplodus_vulgaris$KUD95 ~ data_diplodus_vulgaris$Spawn)
+#################################################################################
+data_epinephelus_marginatus <- subset(week_kuds, Species == "Emar")
+
+glmm_epinephelus_marginatus <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_epinephelus_marginatus, family = Gamma(link="log"))
+summary(glmm_epinephelus_marginatus)
+
+boxplot(data_epinephelus_marginatus$KUD95 ~ data_epinephelus_marginatus$Spawn)
+#################################################################################
+data_gadus_morhua <- subset(week_kuds, Species == "Gmor")
+
+glmm_gadus_morhua <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_gadus_morhua, family = Gamma(link="log"))
+summary(glmm_gadus_morhua)
+
+boxplot(data_gadus_morhua$KUD95 ~ data_gadus_morhua$Spawn)
+#################################################################################
+data_labrus_bergylta <- subset(week_kuds, Species == "Lber")
+
+glmm_labrus_bergylta <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_labrus_bergylta, family = Gamma(link="log"))
+summary(glmm_labrus_bergylta)
+
+boxplot(data_labrus_bergylta$KUD95 ~ data_labrus_bergylta$Spawn)
+#################################################################################
+data_lichia_amia<- subset(week_kuds, Species == "Lami")
+
+glmm_lichia_amia <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_lichia_amia, family = Gamma(link="log"))
+summary(glmm_lichia_amia)
+
+boxplot(data_lichia_amia$KUD95 ~ data_lichia_amia$Spawn)
+#################################################################################
+data_pagrus_pagrus <- subset(week_kuds, Species == "Ppag")
+
+glmm_pagrus_pagrus <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_pagrus_pagrus, family = Gamma(link="log"))
+summary(glmm_pagrus_pagrus)
+
+boxplot(data_pagrus_pagrus$KUD95 ~ data_pagrus_pagrus$Spawn)
+#################################################################################
+data_pomatomus_saltatrix <- subset(week_kuds, Species == "Psal")
+
+glmm_pomatomus_saltatrix <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_pomatomus_saltatrix, family = Gamma(link="log"))
+summary(glmm_pomatomus_saltatrix)
+
+boxplot(data_pomatomus_saltatrix$KUD95 ~ data_pomatomus_saltatrix$Spawn)
+#################################################################################
+data_pseudocaranx_dentex <- subset(week_kuds, Species == "Pden")
+
+glmm_pseudocaranx_dentex <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_pseudocaranx_dentex, family = Gamma(link="log"))
+summary(glmm_pseudocaranx_dentex)
+
+boxplot(data_pseudocaranx_dentex$KUD95 ~ data_pseudocaranx_dentex$Spawn)
+#################################################################################
+data_sciaena_umbra <- subset(week_kuds, Species == "Sumb")
+
+glmm_sciaena_umbra <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sciaena_umbra, family = Gamma(link="log"))
+summary(glmm_sciaena_umbra)
+
+boxplot(data_sciaena_umbra$KUD95 ~ data_sciaena_umbra$Spawn)
+#################################################################################
+data_scorpaena_porcus <- subset(week_kuds, Species == "Spor")
+
+glmm_scorpaena_porcus <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_scorpaena_porcus, family = Gamma(link="log"))
+summary(glmm_scorpaena_porcus)
+
+boxplot(data_scorpaena_porcus$KUD95 ~ data_scorpaena_porcus$Spawn)
+#################################################################################
+data_scorpaena_scrofa <- subset(week_kuds, Species == "Scro")
+
+glmm_scorpaena_scrofa <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_scorpaena_scrofa, family = Gamma(link="log"))
+summary(glmm_scorpaena_scrofa)
+
+boxplot(data_scorpaena_scrofa$KUD95 ~ data_scorpaena_scrofa$Spawn)
+#################################################################################
+data_seriola_dumerili <- subset(week_kuds, Species == "Sdum")
+
+glmm_seriola_dumerili <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_seriola_dumerili, family = Gamma(link="log"))
+summary(glmm_seriola_dumerili)
+
+boxplot(data_seriola_dumerili$KUD95 ~ data_seriola_dumerili$Spawn)
+#################################################################################
+data_seriola_rivoliana <- subset(week_kuds, Species == "Sriv")
+
+glmm_seriola_rivoliana <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_seriola_rivoliana, family = Gamma(link="log"))
+summary(glmm_seriola_rivoliana)
+
+boxplot(data_seriola_rivoliana$KUD95 ~ data_seriola_rivoliana$Spawn)
+#################################################################################
+data_serranus_atricauda <- subset(week_kuds, Species == "Satr")
+
+glmm_serranus_atricauda <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_serranus_atricauda, family = Gamma(link="log"))
+summary(glmm_serranus_atricauda)
+
+boxplot(data_serranus_atricauda$KUD95 ~ data_serranus_atricauda$Spawn)
+#################################################################################
+data_serranus_scriba <- subset(week_kuds, Species == "Sscr")
+
+glmm_serranus_scriba <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_serranus_scriba, family = Gamma(link="log"))
+summary(glmm_serranus_scriba)
+
+boxplot(data_serranus_scriba$KUD95 ~ data_serranus_scriba$Spawn)
+#################################################################################
+data_solea_senegalensis <- subset(week_kuds, Species == "Ssen")
+
+glmm_solea_senegalensis <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_solea_senegalensis, family = Gamma(link="log"))
+summary(glmm_solea_senegalensis)
+
+boxplot(data_solea_senegalensis$KUD95 ~ data_solea_senegalensis$Spawn)
+#################################################################################
+data_sparisoma_cretense <- subset(week_kuds, Species == "Scre")
+
+glmm_sparisoma_cretense <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sparisoma_cretense, family = Gamma(link="log"))
+summary(glmm_sparisoma_cretense)
+
+boxplot(data_sparisoma_cretense$KUD95 ~ data_sparisoma_cretense$Spawn)
+#################################################################################
+data_sparus_aurata <- subset(week_kuds, Species == "Saur")
+
+glmm_sparus_aurata <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sparus_aurata, family = Gamma(link="log"))
+summary(glmm_sparus_aurata)
+
+boxplot(data_sparus_aurata$KUD95 ~ data_sparus_aurata$Spawn)
+#################################################################################
+data_sphyraena_viridensis <- subset(week_kuds, Species == "Svir")
+
+glmm_sphyraena_viridensis <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sphyraena_viridensis, family = Gamma(link="log"))
+summary(glmm_sphyraena_viridensis)
+
+boxplot(data_sphyraena_viridensis$KUD95 ~ data_sphyraena_viridensis$Spawn)
+#################################################################################
+data_spondyliosoma_cantharus <- subset(week_kuds, Species == "Scan")
+
+glmm_spondyliosoma_cantharus <- glmmTMB(KUD95 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_spondyliosoma_cantharus, family = Gamma(link="log"))
+summary(glmm_spondyliosoma_cantharus)
+
+boxplot(data_spondyliosoma_cantharus$KUD95 ~ data_spondyliosoma_cantharus$Spawn)
+#################################################################################
+```
+
+```{r}
+#Glmm KUD50 for each Species
+
+data_dentex_dentex <- subset(week_kuds, Species == "Dden")
+
+glmm_dentex_dentex <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_dentex_dentex, family = Gamma(link="log"))
+summary(glmm_dentex_dentex)
+
+boxplot(data_dentex_dentex$KUD50 ~ data_dentex_dentex$Spawn)
+#################################################################################
+data_dicentrarchus_labrax <- subset(week_kuds, Species == "Dlab")
+
+glmm_dicentrarchus_labrax <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_dicentrarchus_labrax, family = Gamma(link="log"))
+summary(glmm_dicentrarchus_labrax)
+
+boxplot(data_dicentrarchus_labrax$KUD50 ~ data_dicentrarchus_labrax$Spawn)
+#################################################################################
+data_diplodus_cervinus <- subset(week_kuds, Species == "Dcer")
+
+glmm_diplodus_cervinus <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_diplodus_cervinus, family = Gamma(link="log"))
+summary(glmm_diplodus_cervinus)
+
+boxplot(data_diplodus_cervinus$KUD50 ~ data_diplodus_cervinus$Spawn)
+#################################################################################
+data_diplodus_sargus <- subset(week_kuds, Species == "Dsar")
+
+glmm_diplodus_sargus <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_diplodus_sargus, family = Gamma(link="log"))
+summary(glmm_diplodus_sargus)
+
+boxplot(data_diplodus_sargus$KUD50 ~ data_diplodus_sargus$Spawn)
+#################################################################################
+data_diplodus_vulgaris <- subset(week_kuds, Species == "Dvul")
+
+glmm_diplodus_vulgaris <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_diplodus_vulgaris, family = Gamma(link="log"))
+summary(glmm_diplodus_vulgaris)
+
+boxplot(data_diplodus_vulgaris$KUD50 ~ data_diplodus_vulgaris$Spawn)
+#################################################################################
+data_epinephelus_marginatus <- subset(week_kuds, Species == "Emar")
+
+glmm_epinephelus_marginatus <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_epinephelus_marginatus, family = Gamma(link="log"))
+summary(glmm_epinephelus_marginatus)
+
+boxplot(data_epinephelus_marginatus$KUD50 ~ data_epinephelus_marginatus$Spawn)
+#################################################################################
+data_gadus_morhua <- subset(week_kuds, Species == "Gmor")
+
+glmm_gadus_morhua <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_gadus_morhua, family = Gamma(link="log"))
+summary(glmm_gadus_morhua)
+
+boxplot(data_gadus_morhua$KUD50 ~ data_gadus_morhua$Spawn)
+#################################################################################
+data_labrus_bergylta <- subset(week_kuds, Species == "Lber")
+
+glmm_labrus_bergylta <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_labrus_bergylta, family = Gamma(link="log"))
+summary(glmm_labrus_bergylta)
+
+boxplot(data_labrus_bergylta$KUD50 ~ data_labrus_bergylta$Spawn)
+#################################################################################
+data_lichia_amia<- subset(week_kuds, Species == "Lami")
+
+glmm_lichia_amia <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_lichia_amia, family = Gamma(link="log"))
+summary(glmm_lichia_amia)
+
+boxplot(data_lichia_amia$KUD50 ~ data_lichia_amia$Spawn)
+#################################################################################
+data_pagrus_pagrus <- subset(week_kuds, Species == "Ppag")
+
+glmm_pagrus_pagrus <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_pagrus_pagrus, family = Gamma(link="log"))
+summary(glmm_pagrus_pagrus)
+
+boxplot(data_pagrus_pagrus$KUD50 ~ data_pagrus_pagrus$Spawn)
+#################################################################################
+data_pomatomus_saltatrix <- subset(week_kuds, Species == "Psal")
+
+glmm_pomatomus_saltatrix <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_pomatomus_saltatrix, family = Gamma(link="log"))
+summary(glmm_pomatomus_saltatrix)
+
+boxplot(data_pomatomus_saltatrix$KUD50 ~ data_pomatomus_saltatrix$Spawn)
+#################################################################################
+data_pseudocaranx_dentex <- subset(week_kuds, Species == "Pden")
+
+glmm_pseudocaranx_dentex <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_pseudocaranx_dentex, family = Gamma(link="log"))
+summary(glmm_pseudocaranx_dentex)
+
+boxplot(data_pseudocaranx_dentex$KUD50 ~ data_pseudocaranx_dentex$Spawn)
+#################################################################################
+data_sciaena_umbra <- subset(week_kuds, Species == "Sumb")
+
+glmm_sciaena_umbra <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sciaena_umbra, family = Gamma(link="log"))
+summary(glmm_sciaena_umbra)
+
+boxplot(data_sciaena_umbra$KUD50 ~ data_sciaena_umbra$Spawn)
+#################################################################################
+data_scorpaena_porcus <- subset(week_kuds, Species == "Spor")
+
+glmm_scorpaena_porcus <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_scorpaena_porcus, family = Gamma(link="log"))
+summary(glmm_scorpaena_porcus)
+
+boxplot(data_scorpaena_porcus$KUD50 ~ data_scorpaena_porcus$Spawn)
+#################################################################################
+data_scorpaena_scrofa <- subset(week_kuds, Species == "Scro")
+
+glmm_scorpaena_scrofa <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_scorpaena_scrofa, family = Gamma(link="log"))
+summary(glmm_scorpaena_scrofa)
+
+boxplot(data_scorpaena_scrofa$KUD95 ~ data_scorpaena_scrofa$Spawn)
+#################################################################################
+data_seriola_dumerili <- subset(week_kuds, Species == "Sdum")
+
+glmm_seriola_dumerili <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_seriola_dumerili, family = Gamma(link="log"))
+summary(glmm_seriola_dumerili)
+
+boxplot(data_seriola_dumerili$KUD50 ~ data_seriola_dumerili$Spawn)
+#################################################################################
+data_seriola_rivoliana <- subset(week_kuds, Species == "Sriv")
+
+glmm_seriola_rivoliana <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_seriola_rivoliana, family = Gamma(link="log"))
+summary(glmm_seriola_rivoliana)
+
+boxplot(data_seriola_rivoliana$KUD50 ~ data_seriola_rivoliana$Spawn)
+#################################################################################
+data_serranus_atricauda <- subset(week_kuds, Species == "Satr")
+
+glmm_serranus_atricauda <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_serranus_atricauda, family = Gamma(link="log"))
+summary(glmm_serranus_atricauda)
+
+boxplot(data_serranus_atricauda$KUD50 ~ data_serranus_atricauda$Spawn)
+#################################################################################
+data_serranus_scriba <- subset(week_kuds, Species == "Sscr")
+
+glmm_serranus_scriba <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_serranus_scriba, family = Gamma(link="log"))
+summary(glmm_serranus_scriba)
+
+boxplot(data_serranus_scriba$KUD50 ~ data_serranus_scriba$Spawn)
+#################################################################################
+data_solea_senegalensis <- subset(week_kuds, Species == "Ssen")
+
+glmm_solea_senegalensis <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_solea_senegalensis, family = Gamma(link="log"))
+summary(glmm_solea_senegalensis)
+
+boxplot(data_solea_senegalensis$KUD50 ~ data_solea_senegalensis$Spawn)
+#################################################################################
+data_sparisoma_cretense <- subset(week_kuds, Species == "Scre")
+
+glmm_sparisoma_cretense <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sparisoma_cretense, family = Gamma(link="log"))
+summary(glmm_sparisoma_cretense)
+
+boxplot(data_sparisoma_cretense$KUD50 ~ data_sparisoma_cretense$Spawn)
+#################################################################################
+data_sparus_aurata <- subset(week_kuds, Species == "Saur")
+
+glmm_sparus_aurata <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sparus_aurata, family = Gamma(link="log"))
+summary(glmm_sparus_aurata)
+
+boxplot(data_sparus_aurata$KUD50 ~ data_sparus_aurata$Spawn)
+#################################################################################
+data_sphyraena_viridensis <- subset(week_kuds, Species == "Svir")
+
+glmm_sphyraena_viridensis <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_sphyraena_viridensis, family = Gamma(link="log"))
+summary(glmm_sphyraena_viridensis)
+
+boxplot(data_sphyraena_viridensis$KUD50 ~ data_sphyraena_viridensis$Spawn)
+#################################################################################
+data_spondyliosoma_cantharus <- subset(week_kuds, Species == "Scan")
+
+glmm_spondyliosoma_cantharus <- glmmTMB(KUD50 ~ Spawn + MonitArea_km2 + MCP_km2 + (1|Transmitter), data=data_spondyliosoma_cantharus, family = Gamma(link="log"))
+summary(glmm_spondyliosoma_cantharus)
+
+boxplot(data_spondyliosoma_cantharus$KUD50 ~ data_spondyliosoma_cantharus$Spawn)
+#################################################################################
+```
